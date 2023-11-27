@@ -7,46 +7,34 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "cortex-debug",
-            "request": "launch",
-            "name": "Debug (QEMU)",
-            "servertype": "qemu",
-            "cwd": "${workspaceRoot}",
-            "preLaunchTask": "Cargo Build (debug)",
-            "runToEntryPoint": "main",
-            "executable": "./target/thumbv7m-none-eabi/debug/rust-embedded-demo",
-            /* Run `cargo build --example hello` and uncomment this line to run semi-hosting example */
-            //"executable": "./target/thumbv7m-none-eabi/debug/examples/hello",
-            "cpu": "cortex-m3",
-            "machine": "lm3s6965evb",
-        },
-        {
             /* Configuration for the STM32F303 Discovery board */
             "type": "cortex-debug",
             "request": "launch",
             "name": "Debug (OpenOCD)",
             "servertype": "openocd",
             "cwd": "${workspaceRoot}",
-            "preLaunchTask": "Cargo Build (debug)",
-            "runToEntryPoint": "main",
+            "preLaunchTask": "Flash Firmware",
             "executable": "./target/thumbv7em-none-eabihf/debug/rust-embedded-demo",
             /* Run `cargo build --example itm` and uncomment this line to run itm example */
             // "executable": "./target/thumbv7em-none-eabihf/debug/examples/itm",
-            "device": "STM32F303VCT6",
+            "svdFile": "${workspaceRoot}/STM32H7B0x.svd",
             "configFiles": [
-                "interface/stlink-v2-1.cfg",
-                "target/stm32f3x.cfg"
+                "${workspaceRoot}/openocd.cfg"
             ],
-            "svdFile": "${workspaceRoot}/.vscode/STM32F303.svd",
-            "swoConfig": {
+            "rttConfig": {
                 "enabled": true,
-                "cpuFrequency": 8000000,
-                "swoFrequency": 2000000,
-                "source": "probe",
+                "address": "auto",
+                "clearSearch": false,
+                "polling_interval": 10,
+                "rtt_start_retry": 1000,
                 "decoders": [
-                    { "type": "console", "label": "ITM", "port": 0 }
+                    {
+                        "label": "RTT channel 0",
+                        "port": 0,
+                        "type": "console"
+                    }
                 ]
-            }
+            },
         }
     ]
 }
