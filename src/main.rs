@@ -4,9 +4,27 @@
 mod rtt_logger;
 
 use cortex_m_rt::entry;
-use log::{error, warn, info, debug};
+use log::info;
 use panic_rtt_target as _;
-use stm32h7xx_hal::{pac, prelude::*};
+use stm32h7xx_hal::{
+    hal::digital::v2::{InputPin, OutputPin},
+    pac,
+    prelude::*,
+};
+
+fn control_led<In: InputPin<Error = E>, Out: OutputPin<Error = E>, E>(
+    input_pin: &In,
+    led_pin: &mut Out,
+) -> Result<(), E> {
+    if input_pin.is_high()? {
+        info!("high");
+        led_pin.set_high()?;
+    } else {
+        info!("low");
+        led_pin.set_low()?;
+    }
+    Ok(())
+}
 
 #[entry]
 fn main() -> ! {
@@ -28,29 +46,16 @@ fn main() -> ! {
     let gpioe = dp.GPIOE.split(ccdr.peripheral.GPIOE);
     let mut led = gpioe.pe3.into_push_pull_output();
 
+    let gpioc = dp.GPIOC.split(ccdr.peripheral.GPIOC);
+    let key = gpioc.pc13.into_pull_down_input();
+
     // cortex-m已经实现好了delay函数，直接拿到，下面使用
     let mut delay = cp.SYST.delay(ccdr.clocks);
 
-    let mut cnt = 0;
-
     loop {
-        if cnt == 0 {
-            error!("一键三连: {}", cnt);
-        } else if cnt == 1 {
-            warn!("一键三连: {}", cnt);
-        } else if cnt == 2 {
-            info!("一键三连: {}", cnt);
-        } else if cnt >= 1000 {
-            panic!("一键三连: {}", cnt);
-        } else {
-            debug!("一键三连: {}", cnt);
-        }
-
-        cnt += 1;
-
         // 点灯
-        led.toggle();
+        control_led(&key, &mut led).unwrap();
         // 延时500ms
-        delay.delay_ms(500_u16);
+        delay.delay_ms(50_u16);
     }
 }
