@@ -7,6 +7,54 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Probe-rs - stm32h7",
+            "preLaunchTask": "Cargo Build (debug)",
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "chip": "STM32H7B0VBTx",
+            "runtimeExecutable": "probe-rs",
+            "runtimeArgs": [
+                "dap-server"
+            ],
+            "flashingConfig": {
+                "flashingEnabled": true,
+                "haltAfterReset": false,
+            },
+            "coreConfigs": [
+                {
+                    "coreIndex": 0,
+                    "programBinary": "${workspaceFolder}/target/thumbv7em-none-eabihf/debug/rust-embedded-demo",
+                    "chip": "STM32H7B0VBTx",
+                    "svdFile": "${workspaceFolder}/STM32H7B0x.svd",
+                    "rttEnabled": true,
+                    "rttChannelFormats": [
+                        {
+                            "channelNumber": 0,
+                            // Format RTT data as String data
+                            "dataFormat": "String",
+                            // Include host-side timestamps for every line of data transferred from the target RTT output
+                            "showTimestamps": true
+                        },
+                        {
+                            "channelNumber": 1,
+                            // Treat data as raw binary data, and do not format in any way
+                            "dataFormat": "BinaryLE"
+                        }
+                    ],
+                    "options": {
+                        "env": {
+                            "DEFMT_LOG": "debug"
+                        }
+                    },
+                }
+            ],
+            "consoleLogLevel": "Console", //Error, Warn, Info, Debug, Trace
+            "env": {
+                "RUST_LOG": "debug"
+            }
+        },
+        {
             /* Configuration for the STM32F303 Discovery board */
             "type": "cortex-debug",
             "request": "launch",
