@@ -1,5 +1,3 @@
-use panic_rtt_target as _;
-
 use log::{Level, LevelFilter, Metadata, Record};
 use rtt_target::{rprintln, rtt_init_print};
 

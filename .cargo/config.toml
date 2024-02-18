@@ -1,4 +1,5 @@
-[target.thumbv7m-none-eabi]
+[target.thumbv7em-none-eabihf]
+runner = "probe-rs run --chip STM32H7B0VBTx"
 # uncomment this to make `cargo run` execute programs on QEMU
 # runner = "qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -semihosting-config enable=on,target=native -kernel"
 
@@ -35,3 +36,6 @@ target = "thumbv7em-none-eabihf"     # Cortex-M4F and Cortex-M7F (with FPU)
 # target = "thumbv8m.base-none-eabi"   # Cortex-M23
 # target = "thumbv8m.main-none-eabi"   # Cortex-M33 (no FPU)
 # target = "thumbv8m.main-none-eabihf" # Cortex-M33 (with FPU)
+
+[env]
+DEFMT_LOG = "trace"

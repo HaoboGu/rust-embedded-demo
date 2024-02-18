@@ -1,61 +1,45 @@
-#![no_main]
 #![no_std]
+#![no_main]
 
-mod rtt_logger;
-
-use cortex_m_rt::entry;
-use log::info;
-use panic_rtt_target as _;
-use stm32h7xx_hal::{
-    hal::digital::v2::{InputPin, OutputPin},
-    pac,
-    prelude::*,
+use defmt::*;
+use embassy_executor::Spawner;
+use embassy_stm32::{
+    exti::ExtiInput,
+    gpio::{AnyPin, Input, Level, Output, Pin, Pull},
 };
+use embassy_time::Timer;
+use {defmt_rtt as _, panic_probe as _};
 
-fn control_led<In: InputPin<Error = E>, Out: OutputPin<Error = E>, E>(
-    input_pin: &In,
-    led_pin: &mut Out,
-) -> Result<(), E> {
-    if input_pin.is_high()? {
-        info!("high");
-        led_pin.set_high()?;
-    } else {
-        info!("low");
-        led_pin.set_low()?;
-    }
-    Ok(())
-}
-
-#[entry]
-fn main() -> ! {
-    rtt_logger::init(log::LevelFilter::Debug);
-
-    // 获取cortex核心外设和stm32h7的所有外设
-    let cp = cortex_m::Peripherals::take().unwrap();
-    let dp = pac::Peripherals::take().unwrap();
-
-    // Power 设置
-    let pwr = dp.PWR.constrain();
-    let pwrcfg = pwr.freeze();
-
-    // 初始化RCC
-    let rcc = dp.RCC.constrain();
-    let ccdr = rcc.sys_ck(200.MHz()).freeze(pwrcfg, &dp.SYSCFG);
-
-    // 设置LED对应的GPIO
-    let gpioe = dp.GPIOE.split(ccdr.peripheral.GPIOE);
-    let mut led = gpioe.pe3.into_push_pull_output();
-
-    let gpioc = dp.GPIOC.split(ccdr.peripheral.GPIOC);
-    let key = gpioc.pc13.into_pull_down_input();
-
-    // cortex-m已经实现好了delay函数，直接拿到，下面使用
-    let mut delay = cp.SYST.delay(ccdr.clocks);
+// Declare async tasks
+#[embassy_executor::task]
+async fn blink(pin: AnyPin) {
+    let mut led = Output::new(pin, Level::Low, embassy_stm32::gpio::Speed::High);
 
     loop {
-        // 点灯
-        control_led(&key, &mut led).unwrap();
-        // 延时500ms
-        delay.delay_ms(50_u16);
+        // Timekeeping is globally available, no need to mess with hardware timers.
+        led.set_high();
+        Timer::after_millis(150).await;
+        led.set_low();
+        Timer::after_millis(150).await;
+    }
+}
+
+// Main is itself an async task as well.
+#[embassy_executor::main]
+async fn main(spawner: Spawner) {
+    // Initialize the embassy-stm32 HAL.
+    let p = embassy_stm32::init(Default::default());
+
+    // Spawned tasks run in the background, concurrently.
+    spawner.spawn(blink(p.PE3.degrade())).unwrap();
+
+    let mut button = ExtiInput::new(Input::new(p.PC13, Pull::Down), p.EXTI13);
+    loop {
+        // Asynchronously wait for GPIO events, allowing other tasks
+        // to run, or the core to sleep.
+        button.wait_for_rising_edge().await;
+        info!("Button pressed!");
+        button.wait_for_falling_edge().await;
+        info!("Button released!");
     }
 }
